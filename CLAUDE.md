@@ -16,9 +16,9 @@ The frontend never talks to `models/` directly — it goes through the Flask bac
 
 ## Testing
 
-Real state as of 2026-07 (see [docs/TESTING.md](docs/TESTING.md) for the fuller inventory, some of which is now stale — `repo_fetcher.py` gained a real pytest suite in [backend/tests/test_repo_fetcher.py](backend/tests/test_repo_fetcher.py)):
+Real state as of 2026-08 (see [docs/TESTING.md](docs/TESTING.md) for the fuller inventory):
 
-- `backend/tests/` — pytest. `test_repo_fetcher.py` is the real automated suite (mocked HTTP, no network). `test_dpga_real_positives.py` and `test_gitlab_provider.py` are manual/live-network scripts, excluded from collection via `conftest.py`'s `collect_ignore` — don't try to run them as part of the normal suite.
+- `backend/tests/` — pytest, installed via `requirements.txt`. Two real automated suites, all 96 tests passing: `test_repo_fetcher.py` (72 tests, mocked HTTP, no network) and `test_embedding_url.py` (24 tests). `test_dpga_real_positives.py` and `test_gitlab_provider.py` are manual/live-network scripts, excluded from collection via `conftest.py`'s `collect_ignore` — don't try to run them as part of the normal suite.
 - `frontend/` — no test runner installed yet (`npm run lint` is the only check).
 - `models/` — no tests; hard to unit test because weight-loading happens at import time. If asked to add tests here, extract pure formatting/scoring logic first rather than mocking the model load.
 - No CI workflow exists in `.github/workflows` yet — nothing runs these automatically on PRs.
@@ -34,7 +34,6 @@ When adding backend logic, prefer pure/mockable functions (see `repo_fetcher.py`
 
 ## Known rough edges (don't "fix" silently — confirm with a maintainer first)
 
-- `backend/requirements.txt` is missing `python-dotenv`, which `summariser.py` imports — a clean install currently breaks on anything that imports the summariser.
 - `_sanitise_url` in `repo_fetcher.py` validates URL *shape* only, not destination — no SSRF guard against internal/private hosts yet.
 - The trailing `SDGs = [...]` list at the bottom of `backend/sdg_constants.py` looks like leftover dead code.
 

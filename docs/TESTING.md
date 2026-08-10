@@ -1,24 +1,22 @@
 # Testing Guide
 
-This document inventories the testing this project needs: what exists today, what's missing, and the specific test cases each module should have. It's meant to guide contributors picking up `test/` issues, not to describe tests that already exist — as of this writing, **no test framework is installed** in either the backend or the frontend (`frontend/package.json` has no test runner, and the backend has no `pytest`/`unittest` setup). The two files under [`backend/tests/`](../backend/tests/) are manual verification scripts, not an automated suite.
+This document inventories the testing this project needs: what exists today, what's missing, and the specific test cases each module should have. It's meant to guide contributors picking up `test/` issues, not to describe an aspirational end state — the backend now has a real `pytest` suite covering two modules (see table below), but most of the checklist is still unimplemented, and the frontend/`models/` have no test runner at all.
 
 ## Current **state**
 
 | Area | Test runner | Status |
 |------|-------------|--------|
-| Backend (`backend/`) | none | No framework installed. `backend/tests/test_dpga_real_positives.py` and `backend/tests/test_gitlab_provider.py` are manual scripts you run by hand against a live server — useful as smoke tests, not part of CI. |
-| ML microservice (`models/`) | none | No tests. Model loads real weights from Hugging Face Hub at import time, which makes naive unit testing hard (see [§7](#7-models--ge-lab-microservice)). |
+| Backend (`backend/`) | `pytest` (installed, in `requirements.txt`) | Two modules have real automated coverage: [`test_repo_fetcher.py`](../backend/tests/test_repo_fetcher.py) (72 tests) and [`test_embedding_url.py`](../backend/tests/test_embedding_url.py) (24 tests) — **all 96 passing**. `test_dpga_real_positives.py` and `test_gitlab_provider.py` remain manual, live-network scripts (excluded from collection via `conftest.py`'s `collect_ignore`) — useful as smoke tests, not part of the automated suite. `aurora_api.py`, `summariser.py`, `sdg_constants.py`, and `app.py` (§3–§6 below) still have no tests at all. |
+| ML microservice (`models/`) | none | No tests. Model loads real weights from Hugging Face Hub at import time, which makes naive unit testing hard (see [§7](#7-models--ge-lab-microservice)). The pure-formatting extraction recommended there hasn't been done — rounding/threshold logic is still inline in `models/app.py`'s `predict()`/`predict_cosine()`. |
 | Frontend (`frontend/`) | none | No Jest/Vitest/React Testing Library installed. `npm run lint` is the only check that runs today. |
 
-Setting up the runners themselves (`pytest` for backend/models, `Jest` + `React Testing Library` for frontend) is a prerequisite for most of the work below and is good first-issue material.
+Run the backend suite with `cd backend && pytest tests/` (the two manual scripts are auto-excluded). Setting up runners for `models/` and the frontend (`Jest` + `React Testing Library`) is still a prerequisite for most of the work in §7–§8 and is good first-issue material.
 
-### Known gap this inventory surfaced (resolved)
 
-While reviewing the code to write this guide, [`frontend/services/api.ts`](../frontend/services/api.ts) was found to call `api/classify_st_description`, but [`backend/app.py`](../backend/app.py) only defines `/api/hello`, `/api/classify_aurora`, and `/api/classify_st_url` — the description-only classification route never existed on the backend, so selecting the corresponding tab in the UI would fail. Rather than adding the missing route, the dead frontend call was removed: `sdgApi.classifySTDescription`, the `"st-description"` case in `classifyByModel`, and the "Sentence Transformer Description" tab in `results.tsx` are gone. Only `"aurora"` and `"st-url"` are valid `classifyByModel` model types now. A contract test between the frontend API client and the backend routes (§9) would catch this class of drift automatically in the future.
 
 ---
 
-## 1. `backend/services/repo_fetcher.py`
+## 1. `backend/services/repo_fetcher.py` (Passed)
 
 Highest priority — this module is pure logic with a deliberate exception hierarchy, and needs no ML model or live network access if `requests` is mocked.
 
@@ -30,13 +28,15 @@ Highest priority — this module is pure logic with a deliberate exception hiera
 - **`_detect_engine`**: GitLab probe succeeds, Gitea/Forgejo probe succeeds, both fail → `None`, network exceptions during probing are swallowed rather than propagated.
 - **`get_provider` factory**: known domain resolves without a network call, unknown domain triggers engine detection, unsupported host raises `UnsupportedHostError` with the expected message, token is passed through to the provider.
 
-## 2. `backend/embedding_url.py`
+## 2. `backend/embedding_url.py` (Passed)
+
+**Covered by [`backend/tests/test_embedding_url.py`](../backend/tests/test_embedding_url.py) (24 tests, all passing).** The checklist below is what that file implements; kept here for reference since it doubles as the coverage map.
 
 - **`fetch_repo_text`**: user-supplied `project_description` takes priority over the repo's own metadata description (the documented "CHANGE 2" behavior); provider errors on `fetch_meta`/`fetch_topics`/`fetch_readme` are caught individually and don't abort the whole call.
 - **`zero_shot_scores`**: score ordering matches `SDG_NAMES`; raises `KeyError` when the microservice response is missing expected keys; raises `TypeError` on an unexpected `scores` type; handles the `payload["data"]["scores"]` nested-response shape.
 - **`embedding_similarity_scores`**: output is clipped to `[0, 1]` via `COSINE_LOW`/`COSINE_HIGH`.
 - **`ensemble_scores`**: weighted-average arithmetic is correct for various `alpha` values.
-- **`classify_repo`**: empty extracted text raises `ValueError`; predictions above `threshold` are selected; falls back to the top 3 ranked SDGs when nothing clears the threshold.
+- **`classify_repo`**: empty extracted text raises `ValueError`; predictions above `threshold` are selected; `predictions` is `[]` when nothing clears the threshold (see [known gap above](#known-gap-this-inventory-surfaced-resolved-no-threshold-match-behavior)) — no best-effort fallback.
 - **`main`**: scores are formatted to 3 decimal places in the output dict.
 
 All of the above need `requests`, `get_provider`, `summarize_for_sdg`, and `SentenceTransformer` mocked — none of these are integration tests against a live model or network.
@@ -113,15 +113,14 @@ Requires installing Jest or Vitest + React Testing Library first.
 
 - **Contract tests** between `frontend/services/api.ts` and the backend routes — would have caught the missing `classify_st_description` endpoint automatically instead of at runtime.
 - **SSRF consideration**: `fetch_repo_text`/`get_provider` take a user-supplied URL and the *server* makes outbound requests to it. `_sanitise_url` currently only validates URL *shape*, not destination — it will happily route to `http://localhost/...` or an internal `169.254.169.254`/RFC1918 address if a domain-map or engine-detection match were ever added for one. Worth a test (and likely a fix) confirming internal/private hosts are rejected before any request is issued.
-- **Missing dependency**: `python-dotenv` is imported in `summariser.py` but is not listed in [`backend/requirements.txt`](../backend/requirements.txt) — this currently breaks a clean `pip install -r requirements.txt` followed by running anything that imports the summariser.
 - **Rate-limit and timeout behavior** against real forges (GitHub/GitLab/Codeberg/Bitbucket) isn't practical to unit test — track this as a documented manual/staging check instead.
 - **End-to-end smoke test**: submit a real, known-good repository URL through the full stack and confirm a plausible SDG comes back. This is what [`backend/tests/test_dpga_real_positives.py`](../backend/tests/test_dpga_real_positives.py) already does by hand. It belongs in a manual/nightly tier, not the automated unit suite, since it depends on three live external services (the forge API, the GE-Lab microservice, and the embedding model).
 
 ## Suggested priority order for contributors
 
-1. Install `pytest` for `backend/` and `models/`; install Jest/Vitest + RTL for `frontend/`.
-2. `backend/services/repo_fetcher.py` — pure logic, highest test-to-effort ratio.
-3. `backend/services/summariser.py` and `backend/aurora_api.py` — both are mockable HTTP-boundary modules with well-defined fallback paths.
-4. `backend/app.py` route tests, once the `classify_st_description` gap is resolved.
+1. ~~Install `pytest` for `backend/`~~ — done (`test_repo_fetcher.py`, `test_embedding_url.py`). Fix the failing `classify_repo` fallback test/behavior mismatch (see known gap above) before adding more `embedding_url.py` coverage on top of it. Install `pytest` for `models/`; install Jest/Vitest + RTL for `frontend/`.
+2. ~~`backend/services/repo_fetcher.py`~~ — done, 72 tests.
+3. `backend/services/summariser.py` and `backend/aurora_api.py` — both are mockable HTTP-boundary modules with well-defined fallback paths, still untested.
+4. `backend/app.py` route tests (the `classify_st_description` gap is already resolved, so this is unblocked).
 5. Frontend pure-logic tests, then component tests.
 6. `models/` — after extracting the pure formatting logic out of the model-loading routes.

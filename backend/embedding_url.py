@@ -50,19 +50,17 @@ def fetch_repo_text(url: str, project_description: str = "", max_issues: int = 1
 
     readme: str = ""
     try:
-        readme = provider.fetch_readme()    
+        readme = provider.fetch_readme()
     except ProviderError:
         pass
-
-    meta = provider.fetch_meta()  if hasattr(provider, "fetch_meta") else {}
 
     # These can all be None depending on the platform response:
     name        = meta.get("name")        or ""
     # ── CHANGE 2: user's description takes priority over repo's description ──
     description = project_description.strip() or meta.get("description") or ""
     homepage    = meta.get("homepage")    or ""
-    topics      = provider.fetch_topics() or []
-    readme      = provider.fetch_readme() or ""
+    topics      = topics or []
+    readme      = readme or ""
 
     extracted_summary = summarize_for_sdg(
         readme=readme,
@@ -73,12 +71,12 @@ def fetch_repo_text(url: str, project_description: str = "", max_issues: int = 1
     return {
         "owner": provider._owner,
         "repo":  provider._repo,
-        "text":  extracted_summary,                    
+        "text":  extracted_summary,
         "meta":  {
             "name":        name,
             "description": description,
             "topics":      topics,
-            "homepage":    meta.get("homepage", ""),
+            "homepage":    homepage,
         },
     }
 
@@ -131,7 +129,7 @@ def zero_shot_scores(text: str, labels: List[str]) -> Tuple[np.ndarray, Dict]:
         "sequence": text[:500]
     }
 
-    return np.array(ordered_scores, dtype=float), detailed_info
+    return np.array(scores_list, dtype=float), detailed_info
 
 
 
@@ -176,8 +174,6 @@ def classify_repo(url: str, threshold: float = 0.5, top_k: int = 10, use_ensembl
     ranked = [(sdg_constants.SDG_NAMES[i], float(scores[i])) for i in idx]
 
     selected = [(name, sc) for (name, sc) in ranked if sc >= threshold]
-    if not selected:
-        selected = ranked[:max(1, min(top_k, 10))]
 
     return {
         "repo":        f"{data['owner']}/{data['repo']}",  
