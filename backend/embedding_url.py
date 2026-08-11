@@ -199,9 +199,4 @@ def main(url: str, project_description: str = ""):
 
 if __name__ == "__main__":
     print("\033[43m GET THE REPO_ANALYSED RESULTS\033[0m")
-    #urls = ["https://github.com/torvalds/linux", "https://gitlab.com/gitlab-org/gitlab-runner", "https://codeberg.org/forgejo/forgejo"]
-    urls = ["https://github.com/firecrawl/firecrawl", "https://github.com/citylearn-project/CityLearn", "https://gitlab.com/trapper-project/trapper", "https://github.com/OpenMRS/openmrs-core", "https://github.com/opentripplanner/OpenTripPlanner ", "https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb", "https://bitbucket.org/cioapps/wapor-et-look"]
-    for u in urls:
-        print(f"\033[33m {u} \033[0m")
-        res = main(u)
-        print(f"\033[32m {res} \033[0m\n")
+    

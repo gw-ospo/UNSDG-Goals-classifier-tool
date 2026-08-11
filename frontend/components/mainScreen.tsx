@@ -180,9 +180,7 @@ const MainScreen: React.FC<{
                 required
                 className="w-full bg-white px-6 py-4 rounded-2xl border border-gray-200 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               />
-              <p className="mt-1.5 text-xs text-gray-400">
-                Supports GitHub, GitLab, and Codeberg repositories
-              </p>
+              
             </div>
 
             {/* Project Description */}
