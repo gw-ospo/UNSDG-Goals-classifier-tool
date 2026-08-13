@@ -100,6 +100,46 @@ def _sanitise_url(raw: object) -> str:
     if not parsed.hostname:
         raise InvalidURLError(f"URL has no host: {url!r}.")
 
+    hostname = parsed.hostname.lower()
+    # Reject private/internal IP addresses and localhost to prevent SSRF
+    if hostname == "localhost":
+        raise InvalidURLError(
+            f"URL host localhost is not allowed. "
+            "Use a public repository URL such as github.com/owner/repo."
+        )
+    # Check for RFC1918 private IP ranges
+    parts = hostname.split(".")
+    if len(parts) == 4:
+        try:
+            octets = [int(p) for p in parts]
+            # 10.0.0.0/8
+            if octets[0] == 10:
+                raise InvalidURLError(
+                    f"URL host {hostname} is not allowed. "
+                    "Private IP addresses (10.x.x.x) are not supported."
+                )
+            # 172.16.0.0/12
+            if octets[0] == 172 and 16 <= octets[1] <= 31:
+                raise InvalidURLError(
+                    f"URL host {hostname} is not allowed. "
+                    "Private IP addresses (172.16-31.x.x) are not supported."
+                )
+            # 192.168.0.0/16
+            if octets[0] == 192 and octets[1] == 168:
+                raise InvalidURLError(
+                    f"URL host {hostname} is not allowed. "
+                    "Private IP addresses (192.168.x.x) are not supported."
+                )
+            # 127.0.0.0/8 (loopback)
+            if octets[0] == 127:
+                raise InvalidURLError(
+                    f"URL host {hostname} is not allowed. "
+                    "Loopback address (127.x.x.x) is not supported."
+                )
+        except ValueError:
+            # If octets aren't valid integers, continue without IP checking
+            pass
+
     return url
 
 

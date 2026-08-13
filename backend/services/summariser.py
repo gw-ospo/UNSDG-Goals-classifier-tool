@@ -23,6 +23,8 @@ import requests
 import os
 from dotenv import load_dotenv
 
+from services.text_cleaner import clean_text
+
 
 load_dotenv()
 
@@ -138,7 +140,7 @@ def _prepare_for_llm(raw_readme: str, max_chars: int = 12_000) -> str:
     """
     Light pre-cleaning before sending to the LLM.
     """
-    text = raw_readme
+    text = clean_text(raw_readme)
 
     text = re.sub(r'```[\s\S]*?```', '', text)
     text = re.sub(r'~~~[\s\S]*?~~~', '', text)
