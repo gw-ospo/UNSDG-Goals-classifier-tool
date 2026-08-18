@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import sdg_constants
 from embedding_url import get_embedder
 
-ST_URL_ENDPOINT = "http://127.0.0.1:5000/api/classify_st_url"
+ST_URL_ENDPOINT = "http://127.0.0.1:8010/api/classify_st_url"
 
 # ── negative set, unchanged from before ───────────────────────────────────
 NEGATIVE_PROJECTS = [

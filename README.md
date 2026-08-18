@@ -50,6 +50,7 @@ We warmly welcome contributions of all kinds both code and non-code! Please read
 - **Backend**: Flask API with Aurora SDG API classifier
 - **Integration**: GitHub API for pulling repository information
 
+
 ## Support
 This project is part of the [CHAOSS](https://chaoss.community) community, a Linux Foundation project.
  

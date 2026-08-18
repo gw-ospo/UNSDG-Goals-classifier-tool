@@ -27,13 +27,26 @@ You don't need to be a developer to contribute! There are many meaningful ways t
 
  
 ## Development Setup
- 
+
+This repository contains **three separate services** that run at the same time:
+
+| Service | Directory | Stack | Port |
+|---------|-----------|-------|------|
+| Frontend | `frontend/` | Next.js 15 + TypeScript + Tailwind | 3000 |
+| Backend API | `backend/` | Flask | 8010 |
+| Model service | `models/` | Flask + PyTorch (LUKE SDG classifier) | 9010 |
+
+The frontend talks only to the backend; the backend calls the model service. There is **no root `package.json`** — every `npm` command must be run from inside `frontend/`.
+
 ### Prerequisites
  
-- [Node.js](https://nodejs.org/) v18 or higher
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- A GitHub personal access token (for API access during development)
+- [Node.js](https://nodejs.org/) v18.18 or higher (required by Next.js 15)
+- [npm](https://www.npmjs.com/) (ships with Node.js)
+- [Python](https://www.python.org/) 3.10 or higher, with `venv` and `pip`
 - Git
+- A [GitHub personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) — raises the GitHub API rate limit when fetching repository data
+- *(Optional)* A [Groq API key](https://www.groq.com/) — enables LLM summarization of READMEs; the backend falls back gracefully without it
+- *(Optional)* A [Hugging Face token](https://huggingface.co/docs/hub/en/security-tokens) — only needed if you hit rate limits downloading model weights
 
 ### Local Setup
  
@@ -48,27 +61,69 @@ You don't need to be a developer to contribute! There are many meaningful ways t
    git remote add upstream https://github.com/chaoss/UNSDG-classifier-tool.git
    ```
  
-3. **Install dependencies:**
-   ```bash
-   npm install
-   ```
- 
-4. **Configure environment variables:**
+3. **Configure environment variables** in the repository root:
    ```bash
    cp .env.example .env
    ```
  
-   Then edit `.env` to add your GitHub personal access token:
+   Then edit `.env` and fill in your tokens:
    ```
    GITHUB_TOKEN=your_token_here
+   GROQ_API_KEY=your_key_here
+   HF_TOKEN=your_token_here
    ```
  
-5. **Start the development server:**
+   Only `GITHUB_TOKEN` is needed to get started — the other two are optional (see Prerequisites). The backend picks this file up automatically. Keep it in the repository root and never commit it.
+ 
+4. **Start the backend API** — in a new terminal, from the repository root:
    ```bash
+   cd backend
+   python3 -m venv myvenv
+   source myvenv/bin/activate     # Windows: myvenv\Scripts\activate
+   pip install -r requirements.txt
+   python app.py
+   ```
+ 
+   The API runs at `http://127.0.0.1:8010`. Check it with `curl http://127.0.0.1:8010/api/hello`.
+ 
+5. **Start the model service** — in a second terminal, from the repository root. Required by the `/api/classify_st_url` route:
+   ```bash
+   cd models
+   python3 -m venv venv
+   source venv/bin/activate       # Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   python app.py
+   ```
+ 
+   The service runs at `http://localhost:9010`. **The first start is slow** — it downloads the LUKE classifier weights from Hugging Face. Wait for `Model and tokenizer loaded successfully.` before classifying anything.
+ 
+6. **Start the frontend** — in a third terminal, from the repository root:
+   ```bash
+   cd frontend
+   npm install
    npm run dev
    ```
  
    The app should be running at `http://localhost:3000`.
+
+#### Do I need all three?
+
+If you're working on the UI, the Aurora classifier, or repository fetching, you can skip step 5 — just be aware that the sentence-transformer option in the UI will return an error until the model service is running.
+
+#### Quick start script
+
+[`bash.sh`](bash.sh) automates steps 4 and 6 (backend venv + frontend install, started together):
+
+```bash
+./bash.sh
+```
+
+It does **not** start the model service — run step 5 yourself in a separate terminal if you need it.
+
+#### Troubleshooting
+
+- **`npm error Could not read package.json`** — you're in the repository root. `cd frontend` first.
+- **The first classification takes several minutes** — both the backend and the model service download Hugging Face models on first use. Later runs read from the local cache.
 
 ## Making a Contribution
  
@@ -114,11 +169,23 @@ Examples: `feat/add-sdg-tooltip`, `fix/api-timeout-handling`, `docs/update-setup
 
 ### 4. Test Your Changes
  
-Before opening a PR, make sure all tests pass:
+Before opening a PR, run the checks that apply to what you touched.
+ 
+**Backend** — pytest, with the virtualenv from setup step 4 activated:
  
 ```bash
-npm test
+cd backend
+pytest tests/
 ```
+ 
+**Frontend** — there is no test runner yet, so linting is the only automated check:
+ 
+```bash
+cd frontend
+npm run lint
+```
+ 
+The `models/` service has no tests. See [docs/TESTING.md](docs/TESTING.md) for the full inventory of what's covered, what isn't, and which gaps are good first issues — setting up a frontend test runner is one of them.
  
 If you're adding new functionality, include tests that cover the new behavior. If you're fixing a bug, add a test that would have caught the bug.
  
@@ -141,7 +208,8 @@ A good pull request:
 - **Describes the change** — explain *what* you changed and *why*, not just *how*
 - **Includes screenshots** for UI changes
 - **Is focused** — one logical change per PR; split large changes into smaller ones if possible
-- **Passes all CI checks** — the PR won't be merged if tests or linting fail
+- **Passes the checks in step 4** — there is no CI pipeline yet, so run the backend tests and the frontend linter locally and say what you ran in the PR description
+
 ### PR Description Template
  
 ```markdown
@@ -190,8 +258,7 @@ Keep the subject line under 72 characters. Use the body to explain the *why* beh
 ## Coding Standards
  
 - Follow the existing code style in the project.
-- Run the linter before committing: `npm run lint`
-- Format your code: `npm run format` (if configured)
+- Run the linter before committing frontend changes: `cd frontend && npm run lint`. (There's no `format` script configured yet — adding one is a welcome contribution.)
 - Avoid committing commented out code or debug `console.log` statements.
 - Use descriptive variable and function names.
 - Keep functions small and focused on a single responsibility.

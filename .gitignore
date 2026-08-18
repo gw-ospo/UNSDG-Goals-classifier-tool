@@ -1,8 +1,10 @@
-# === Python (backend) ===
+# === Python (backend + models) ===
 backend/myvenv/
+models/venv/
 __pycache__/
 *.pyc
 backend/.summarizer_cache/
+.pytest_cache/
 
 # === Frontend (Next.js) ===
 frontend/node_modules

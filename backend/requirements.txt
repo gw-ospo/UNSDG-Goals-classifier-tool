@@ -1,4 +1,3 @@
-pipeline
 sentence-transformers
 transformers
 requests
