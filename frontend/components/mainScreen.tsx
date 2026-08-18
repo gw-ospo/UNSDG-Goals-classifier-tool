@@ -76,7 +76,7 @@ const MainScreen: React.FC<{
         setUploadMsg("Text Analyzing Successfully!");
       }
 
-      // const base = "http://127.0.0.1:5000/";
+      // const base = "http://127.0.0.1:8010/";
       // const response = await axios.post(
       //   base + "api/classify_aurora",
       //   finalizedData,
