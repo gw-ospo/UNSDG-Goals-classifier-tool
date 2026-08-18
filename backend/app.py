@@ -6,6 +6,7 @@ from embedding_url import main as classify_url
 from aurora_api import main as aurora_classify
 from dotenv import load_dotenv
 from services.recommendation_pipeline import assess_relevance
+from sdg_constants import PER_SDG_THRESHOLDS, sdg_number_from_name
 load_dotenv()
 
 try:
@@ -26,6 +27,23 @@ except Exception:
 
 app = Flask(__name__)
 CORS(app)
+
+
+def _st_pred_passes(pred: dict) -> bool:
+    """
+    Per-SDG gate for the sentence-transformer/ensemble pipeline.
+
+    A single global threshold cannot serve all 17 SDGs (docs/EVAL_DPGA_150_
+    RESULTS_alpha07_ANALYSIS.md §6): at the production ensemble alpha=0.7 the
+    per-SDG F1-optimal thresholds range 0.17 (SDG 9) to 0.76 (SDG 14). Apply
+    PER_SDG_THRESHOLDS when the SDG is known, falling back to the old `> 0.4`
+    gate for anything else (keeps the Aurora route untouched).
+    """
+    score = pred.get("prediction", 0)
+    num = sdg_number_from_name(pred.get("sdg", ""))
+    if num is not None and num in PER_SDG_THRESHOLDS:
+        return score >= PER_SDG_THRESHOLDS[num]
+    return score > 0.4
 
 
 @app.route('/api/hello', methods=['GET'])
@@ -172,7 +190,7 @@ def classify_st_url():
         {"sdg": name, "prediction": score}
         for name, score in st_url_result.get("sdg_predictions", {}).items()
     ]
-    filtered = [p for p in preds if p.get("prediction", 0) > 0.4]
+    filtered = [p for p in preds if _st_pred_passes(p)]
 
     response = {
         "projectName": projectName,

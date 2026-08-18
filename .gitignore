@@ -46,3 +46,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# Ignore Excel temporary lock files
+~$*.xlsx
+~$*.xls
+~$*.csv

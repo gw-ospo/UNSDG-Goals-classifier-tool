@@ -152,8 +152,27 @@ def ensemble_scores(zs: np.ndarray, es: np.ndarray, alpha: float = 0.5) -> np.nd
     """
     return alpha * zs + (1 - alpha) * es
 
+
+def passes_threshold(name: str, score: float, threshold: float,
+                     per_sdg_thresholds: Dict[str, float] | None = None) -> bool:
+    """
+    Decide whether an SDG prediction passes the gate.
+
+    When ``per_sdg_thresholds`` is provided (keyed by SDG number, e.g.
+    ``sdg_constants.PER_SDG_THRESHOLDS``), the per-SDG value wins — see
+    docs/EVAL_DPGA_150_RESULTS_alpha07_ANALYSIS.md §6, where the alpha-0.7
+    per-SDG F1-optimal thresholds range from 0.17 (SDG 9) to 0.76 (SDG 14).
+    Falls back to the global ``threshold`` for SDGs not in the map (or when no
+    map is given), preserving the historical behavior.
+    """
+    if per_sdg_thresholds:
+        sdg_num = sdg_constants.sdg_number_from_name(name)
+        if sdg_num is not None and sdg_num in per_sdg_thresholds:
+            return score >= per_sdg_thresholds[sdg_num]
+    return score >= threshold
+
 # ── CHANGE 3: added project_description param, passed to fetch_repo_text ─────
-def classify_repo(url: str, threshold: float = 0.5, top_k: int = 10, use_ensemble: bool = True, proj_desc: str = ""):
+def classify_repo(url: str, threshold: float = 0.55, top_k: int = 10, use_ensemble: bool = True, proj_desc: str = "", per_sdg_thresholds: Dict[str, float] | None = None):
     data = fetch_repo_text(url, project_description=proj_desc)
     text = data["text"][:6000]
 
@@ -168,14 +187,17 @@ def classify_repo(url: str, threshold: float = 0.5, top_k: int = 10, use_ensembl
 
     if use_ensemble:
         es = embedding_similarity_scores(text, sdg_constants.SDG_DESCS)
-        scores = ensemble_scores(zs, es, alpha=0.3)
+        scores = ensemble_scores(zs, es, alpha=0.7)
     else:
         scores = zs
 
     idx = np.argsort(scores)[::-1]
     ranked = [(sdg_constants.SDG_NAMES[i], float(scores[i])) for i in idx]
 
-    selected = [(name, sc) for (name, sc) in ranked if sc >= threshold]
+    selected = [
+        (name, sc) for (name, sc) in ranked
+        if passes_threshold(name, sc, threshold, per_sdg_thresholds)
+    ]
 
     return {
         "repo":        f"{data['owner']}/{data['repo']}",  
@@ -187,7 +209,13 @@ def classify_repo(url: str, threshold: float = 0.5, top_k: int = 10, use_ensembl
 # ── CHANGE 4: main() accepts and passes project_description ──────────────────
 def main(url: str, project_description: str = ""):
 
-    result = classify_repo(url, threshold=0.7, use_ensemble=True, proj_desc=project_description)
+    result = classify_repo(
+        url,
+        threshold=0.55,
+        use_ensemble=True,
+        proj_desc=project_description,
+        per_sdg_thresholds=sdg_constants.PER_SDG_THRESHOLDS,
+    )
 
     predictions = {
         "project_name": result["repo"],

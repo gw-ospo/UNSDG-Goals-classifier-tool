@@ -3,6 +3,8 @@ SDG (Sustainable Development Goals) Constants
 Centralized storage for SDG labels and descriptions used across classification models.
 """
 
+import re
+
 # SDG number to name mapping (used by Aurora API)
 SDG_LABELS_DICT = {
     "1": "No Poverty",
@@ -195,7 +197,7 @@ SDG_LABELS = [
 
     'Goal 9 focuses on the promotion of infrastructure development, industrialization and innovation. This can be accomplished through enhanced international and domestic financial, technological and technical support, research and innovation, and increased access to information and communication technology.',
 
-    'Goal 10 calls for reducing inequalities in income, as well as those based on sex, age, disability, race, class, ethnicity, religion and opportunity—both within and among countries. It also aims to ensure safe, orderly and regular migration and addresses issues related to representation of developing countries in global decision-making and development assistance.',
+    'Goal 10 calls for reducing inequalities in income, as well as those based on sex, age, disability, race, class, ethnicity, religion and opportunityâ€”both within and among countries. It also aims to ensure safe, orderly and regular migration and addresses issues related to representation of developing countries in global decision-making and development assistance.',
 
     'Goal 11 aims to renew and plan cities and other human settlements in a way that fosters community cohesion and personal security while stimulating innovation and employment.',
 
@@ -218,3 +220,46 @@ print("SDG Constants loaded: ", len(SDG_LABELS), " SDGs with names and descripti
 SDGs = [
     "SDG 1", "SDG 2", "SDG 3",
 ]
+
+# Per-SDG F1-optimal thresholds (1% grid sweep) re-derived for the production
+# ensemble alpha=0.7 (0.7*zero-shot + 0.3*embedding), from the alpha-0.7 eval
+# run documented in docs/EVAL_DPGA_150_RESULTS_alpha07_ANALYSIS.md Â§6.
+# Computed over the same 118 labeled DPGs as the original report.
+#
+# At alpha 0.7 the extreme gates of the old alpha-0.3 derivation collapsed
+# (SDG 9: 0.04 -> 0.17, SDG 14: 0.90 -> 0.76): with more zero-shot weight the
+# scores behave far more uniformly, so the gates now cluster in a tight
+# 0.17-0.76 band. Per-SDG gates still beat a single global threshold on macro-F1
+# (~0.54 vs 0.464 at the 0.55 global optimum), but the spread is much smaller.
+# Keyed by SDG number string, matching sdg_number_from_name().
+PER_SDG_THRESHOLDS = {
+    "1":  0.58,   # No Poverty
+    "2":  0.54,   # Zero Hunger
+    "3":  0.50,   # Good Health and Well-being
+    "4":  0.46,   # Quality Education
+    "5":  0.53,   # Gender Equality
+    "6":  0.7,   # Clean Water and Sanitation
+    "7":  0.45,   # Affordable and Clean Energy
+    "8":  0.30,   # Decent Work and Economic Growth
+    "9":  0.17,   # Industry, Innovation and Infrastructure
+    "10": 0.50,   # Reduced Inequalities
+    "11": 0.43,   # Sustainable Cities and Communities
+    "12": 0.70,   # Responsible Consumption and Production
+    "13": 0.32,   # Climate Action
+    "14": 0.76,   # Life Below Water
+    "15": 0.61,   # Life on Land
+    "16": 0.55,   # Peace, Justice and Strong Institutions
+    "17": 0.46,   # Partnerships for the Goals
+}
+
+_SDG_NUMBER_RE = re.compile(r"^\s*(?:SDG|Goal)\s*(\d{1,2})\b", re.IGNORECASE)
+
+
+def sdg_number_from_name(name: str) -> str | None:
+    """
+    Extract the SDG number from a label like "SDG 3: Ensure healthy lives..."
+    (or "Goal 1 calls for..."). Returns the number string ("3") or None if the
+    label does not start with an SDG/Goal number.
+    """
+    m = _SDG_NUMBER_RE.search(name or "")
+    return m.group(1) if m else None
