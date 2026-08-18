@@ -48,6 +48,7 @@ export const classifyByModel = async (
     case "st-url":
       return sdgApi.classifySTUrl(data);
     default:
+      console.warn(`Unknown model type: ${modelType}, defaulting to Aurora`);
       return sdgApi.classifyAurora(data);
   }
 };

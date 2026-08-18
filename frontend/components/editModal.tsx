@@ -20,7 +20,7 @@ const EditModal: React.FC<EditModalProps> = ({
   saveEditedResults,
 }) => {
   const parseSdgFromString = (value: string) => {
-    const number = value.match(/\d+/)?.[0] ?? "";
+    const number = (value.match(/SDG\s*(\d+)/i) || value.match(/^(\d+)/))?.[1] ?? "";
     const name = value.replace(/^SDG\s*\d+\s*:?\s*/i, "").trim() || value;
     return { number, name };
   };

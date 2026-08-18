@@ -28,8 +28,9 @@ def fetch_repo_text(url: str, project_description: str = "", max_issues: int = 1
     provider = get_provider(url, token=token)
     meta: Dict[str, str] = {"name": "", "description": "", "homepage": ""}
     try:
-        if hasattr(provider, "fetch_meta"):
-            meta_candidate = provider.fetch_meta()
+        fetch_meta = getattr(provider, "fetch_meta", None)
+        if callable(fetch_meta):
+            meta_candidate = fetch_meta()
             if isinstance(meta_candidate, dict):
                 meta = meta_candidate
         else:
@@ -68,6 +69,7 @@ def fetch_repo_text(url: str, project_description: str = "", max_issues: int = 1
         description=description,
         topics=topics
     )
+    print(extracted_summary)
     return {
         "owner": provider._owner,
         "repo":  provider._repo,
@@ -144,7 +146,7 @@ def embedding_similarity_scores(text: str, label_texts: List[str]) -> np.ndarray
     sims = np.clip((sims - COSINE_LOW) / (COSINE_HIGH - COSINE_LOW), 0, 1)
     return sims
 
-def ensemble_scores(zs: np.ndarray, es: np.ndarray, alpha: float = 0.3) -> np.ndarray:
+def ensemble_scores(zs: np.ndarray, es: np.ndarray, alpha: float = 0.5) -> np.ndarray:
     """
     Simple mean ensemble; tune alpha if desired.
     """
@@ -185,7 +187,7 @@ def classify_repo(url: str, threshold: float = 0.5, top_k: int = 10, use_ensembl
 # ── CHANGE 4: main() accepts and passes project_description ──────────────────
 def main(url: str, project_description: str = ""):
 
-    result = classify_repo(url, threshold=0.4, use_ensemble=True, proj_desc=project_description)
+    result = classify_repo(url, threshold=0.7, use_ensemble=True, proj_desc=project_description)
 
     predictions = {
         "project_name": result["repo"],

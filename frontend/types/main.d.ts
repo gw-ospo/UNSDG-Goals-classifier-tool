@@ -13,11 +13,22 @@ export type SDGValue = {
       };
 };
 
+export type Recommendation = {
+  reason: string;
+  suggestions: string[];
+  text_quality: number;
+};
+
 export type ResultsData = {
   projectUrl?: string;
   projectName?: string;
   projectDescription?: string;
-  predictions?: Record<string, SDGValue> | Record<string, number>;
+  recommendation?: Recommendation;
+  predictions?:
+    | Record<string, SDGValue>
+    | Record<string, number>
+    | SDGPrediction[]
+    | { sdg: string; prediction: number }[];
   [key: string]: unknown;
 };
 
@@ -42,8 +53,13 @@ export interface SDGClassificationRequest {
   projectDescription: string;
 }
 
+export type SDGPrediction = {
+  sdg: string;
+  prediction: number;
+};
+
 export interface SDGClassificationResponse {
-  predictions: Record<string, number | { prediction: number }>;
+  predictions: (SDGPrediction | { sdg: string; prediction: number })[];
   projectName?: string;
   projectUrl?: string;
   repo_url?: string;
