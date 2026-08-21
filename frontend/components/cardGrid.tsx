@@ -96,7 +96,7 @@ const SDGCard = ({ sdgNumber, sdgName, confidence }: SDGCardProps) => {
 };
 
 const CardGrid = ({ sdgPredictions }: CardGridProps) => {
-  const predictionsArray: Array<SDGPrediction & { sourceKey: string }> =
+  const predictionsArray: Array<SDGValue & { sourceKey: string }> =
     Array.isArray(sdgPredictions)
       ? sdgPredictions.map((item, index) => ({
           ...item,
@@ -111,7 +111,7 @@ const CardGrid = ({ sdgPredictions }: CardGridProps) => {
           }
           return { prediction: 0, sourceKey };
         })
-          .filter((item): item is SDGPrediction & { sourceKey: string } => {
+          .filter((item): item is SDGValue & { sourceKey: string } => {
             return item.prediction > 0;
           }));
 
