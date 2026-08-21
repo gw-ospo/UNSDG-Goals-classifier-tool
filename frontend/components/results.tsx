@@ -7,6 +7,7 @@ import EditModal from "./editModal";
 import { SDGValue, ResultsData } from "@/types/main";
 import { IoIosInformationCircleOutline } from "react-icons/io";
 import { classifyByModel } from "@/services/api";
+import NoSdgPage from "./noSdgPage"
 
 /*
 Results Component
@@ -133,7 +134,9 @@ const Results = ({ results, setResults, setError }: ResultsProps) => {
   const getScore = (v: number | SDGValue | null | undefined) =>
     typeof v === "number"
       ? Number(v)
-      : Number((v as SDGValue)?.prediction ?? 0);
+      : v && typeof v.prediction === "number"
+        ? Number(v.prediction)
+        : 0;
 
   const saveEditedResults = () => {
     if (results) {
@@ -295,6 +298,7 @@ const Results = ({ results, setResults, setError }: ResultsProps) => {
   };
 
   const noSdgs = isNoSdgs(results?.predictions);
+  const recommendation = results?.recommendation;
   const spinnerGradient = `conic-gradient(from 180deg, ${sdgSpinnerColors
     .map((color, index) => {
       const step = 360 / sdgSpinnerColors.length;
@@ -425,13 +429,9 @@ const Results = ({ results, setResults, setError }: ResultsProps) => {
                   </div>
                 ) : results ? (
                   noSdgs ? (
-                    <div className="py-16">
-                      <div className="text-center px-4">
-                        <h2 className="text-3xl font-bold text-black">
-                          This project does not satisfy any SDG
-                        </h2>
-                      </div>
-                    </div>
+                    <NoSdgPage
+                      recommendation={recommendation}
+                    />
                   ) : (
                     <>
                       {/* SDG Cards Grid */}

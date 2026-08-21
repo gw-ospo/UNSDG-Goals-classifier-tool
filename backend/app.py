@@ -5,6 +5,7 @@ from flask_cors import CORS
 from embedding_url import main as classify_url
 from aurora_api import main as aurora_classify
 from dotenv import load_dotenv
+from services.recommendation_pipeline import assess_relevance
 load_dotenv()
 
 try:
@@ -58,6 +59,12 @@ def classify_aurora():
         print(f"Aurora API model failed: {e}")
         return jsonify({"error": str(e), "message": "Aurora API classification failed"}), 500
 
+    # ── Recommendation pipeline: assess why no SDGs were returned ──────────
+    rec = assess_relevance(
+        projectDescription or "",
+        aurora_result.get("project_description", "") or "",
+    )
+
     sdg_preds = aurora_result.get("sdg_predictions", {})
     preds = (
         [{"sdg": name, "prediction": score} for name, score in sdg_preds.items()]
@@ -66,11 +73,18 @@ def classify_aurora():
     )
     filtered = [p for p in preds if p.get("prediction", 0) > 0.4]
 
-    return jsonify({
+    response = {
         "projectName": aurora_result.get("project_name"),
         "projectUrl":  aurora_result.get("project_url"),
         "predictions": filtered,
-    }), 200
+        "recommendation": {
+            "reason": rec["reason"],
+            "suggestions": rec["suggestions"],
+            "text_quality": rec["text_quality"],
+        } if not filtered else None,
+    }
+
+    return jsonify(response), 200
 
 
 # ---------------------------------------------------------------------------
@@ -148,17 +162,30 @@ def classify_st_url():
             "message": "Sentence Transformer URL model classification failed.",
         }), 500
 
+    # ── Recommendation pipeline: assess why no SDGs were returned ──────────
+    rec = assess_relevance(
+        projectDescription or "",
+        st_url_result.get("meta", {}).get("description", "") or "",
+    )
+
     preds = [
         {"sdg": name, "prediction": score}
         for name, score in st_url_result.get("sdg_predictions", {}).items()
     ]
     filtered = [p for p in preds if p.get("prediction", 0) > 0.4]
 
-    return jsonify({
+    response = {
         "projectName": projectName,
         "projectUrl":  projectUrl,
         "predictions": filtered,
-    }), 200
+        "recommendation": {
+            "reason": rec["reason"],
+            "suggestions": rec["suggestions"],
+            "text_quality": rec["text_quality"],
+        } if not filtered else None,
+    }
+
+    return jsonify(response), 200
 
 
 if __name__ == '__main__':
