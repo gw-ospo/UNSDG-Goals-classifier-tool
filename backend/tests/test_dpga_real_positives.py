@@ -18,7 +18,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import sdg_constants
 from embedding_url import get_embedder
 
-ST_URL_ENDPOINT = "http://127.0.0.1:8010/api/classify_st_url"
+_BACKEND_PORT = os.environ.get("BACKEND_PORT", "8010")
+ST_URL_ENDPOINT = os.environ.get(
+    "BACKEND_BASE_URL", f"http://127.0.0.1:{_BACKEND_PORT}"
+).rstrip("/") + "/api/classify_st_url"
 
 # ── negative set, unchanged from before ───────────────────────────────────
 NEGATIVE_PROJECTS = [

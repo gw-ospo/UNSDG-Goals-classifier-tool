@@ -4,3 +4,4 @@ transformers
 sentence-transformers
 huggingface_hub
 numpy
+python-dotenv

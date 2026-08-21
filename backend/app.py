@@ -189,6 +189,7 @@ def classify_st_url():
 
 
 if __name__ == '__main__':
-    # Port 8010 rather than Flask's default 5000 — macOS AirPlay Receiver
-    # occupies 5000. Keep in sync with API_BASE_URL in frontend/services/api.ts.
-    app.run(debug=True, port=8010)
+    # Default 8010 rather than Flask's 5000 — macOS AirPlay Receiver occupies 5000.
+    # Override with BACKEND_PORT (.env). Whatever this binds, point
+    # NEXT_PUBLIC_API_BASE_URL in frontend/.env.local at it.
+    app.run(debug=True, port=int(os.environ.get("BACKEND_PORT", 8010)))

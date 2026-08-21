@@ -76,25 +76,6 @@ const MainScreen: React.FC<{
         setUploadMsg("Text Analyzing Successfully!");
       }
 
-      // const base = "http://127.0.0.1:8010/";
-      // const response = await axios.post(
-      //   base + "api/classify_aurora",
-      //   finalizedData,
-      //   {
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //     },
-      //   },
-      // );
-
-      // if (!response.statusText || response.statusText !== "OK") {
-      //   throw new Error(response.data.error);
-      // }
-      // if (response.data && response.data.repo_url) {
-      //   setUploadMsg("Text Analyzing Successfully!");
-      // }
-
-      // console.log("API Response:", response.data);
       setResults(response as ResultsData);
     } catch (error) {
       console.error("Error:", error);
