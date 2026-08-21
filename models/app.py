@@ -129,6 +129,10 @@ def hello():
 
 
 if __name__ == "__main__":
-    # Override with MODELS_PORT (.env). The backend reaches this service via
-    # MODEL_SERVICE_URL, which must point at whatever this binds.
-    app.run(port=int(os.environ.get("MODELS_PORT", 9010)))
+    # debug is pinned off: this service is internal, and the reloader would
+    # load the LUKE weights a second time. Without this, FLASK_DEBUG in the
+    # shared root .env would switch the Werkzeug debugger on here too.
+    #
+    # Override the port with MODELS_PORT (.env). The backend reaches this
+    # service via MODEL_SERVICE_URL, which must point at whatever this binds.
+    app.run(debug=False, port=int(os.environ.get("MODELS_PORT", 9010)))
