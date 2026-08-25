@@ -18,21 +18,12 @@ import re
 from typing import List, Tuple
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 from sdg_constants import SDG_DESCS, SDG_NAMES
+from services.embedder import get_embedder
 
 
-# Module-level embedder (loaded once, same pattern as embedding_url.py)
-_embedder = None
-
-
-def get_embedder():
-    global _embedder
-    if _embedder is None:
-        _embedder = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
-    return _embedder
-
+# Embedder is shared process-wide via services.embedder.
 
 def _clean_text(raw: str) -> str:
     """Basic cleaning: strip, collapse whitespace, remove bare URLs."""
