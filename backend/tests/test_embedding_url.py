@@ -298,8 +298,10 @@ class TestEnsembleScores:
     def test_default_alpha_is_weighted_average(self):
         zs = np.array([1.0, 0.0])
         es = np.array([0.0, 1.0])
-        result = embedding_url.ensemble_scores(zs, es)  # alpha defaults to 0.3
-        np.testing.assert_allclose(result, [0.3, 0.7])
+        # The signature default is 0.5. Production never relies on it —
+        # classify_repo passes alpha explicitly — so this pins the fallback only.
+        result = embedding_url.ensemble_scores(zs, es)
+        np.testing.assert_allclose(result, [0.5, 0.5])
 
 
 # ─────────────────────────── classify_repo ────────────────────────────────────
