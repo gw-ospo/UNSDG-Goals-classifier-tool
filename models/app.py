@@ -5,7 +5,6 @@ from transformers import AutoTokenizer
 from similarities import SDG_DESCS
 from classifier import SDGClassifier
 from huggingface_hub import hf_hub_download
-#from gh_cleaner import clean_github_readme as cleaner
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from similarities import get_embedder

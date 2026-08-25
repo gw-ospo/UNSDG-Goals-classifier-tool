@@ -4,14 +4,13 @@ import base64
 import requests
 from urllib.parse import urlparse
 from typing import List, Dict, Tuple
-from transformers import pipeline
-from sentence_transformers import SentenceTransformer
 import numpy as np
 import sdg_constants
 from sdg_constants import SDG_LABELS, SDG_NAMES, SDG_DESCS
 from services.repo_fetcher import get_provider
 from urllib.parse import urlparse
 from services.summariser import summarize_for_sdg
+from services.embedder import get_embedder
 
 # repo_fetcher may define ProviderError; if not available, fall back to a generic exception.
 try:
@@ -81,15 +80,6 @@ def fetch_repo_text(url: str, project_description: str = "", max_issues: int = 1
             "homepage":    homepage,
         },
     }
-
-_embedder = None
-
-
-def get_embedder():
-    global _embedder
-    if _embedder is None:
-        _embedder = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
-    return _embedder
 
 
 def zero_shot_scores(text: str, labels: List[str]) -> Tuple[np.ndarray, Dict]:
