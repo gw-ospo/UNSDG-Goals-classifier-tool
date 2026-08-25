@@ -52,8 +52,30 @@ model = SDGClassifier(
     class_number=NUM_CLASSES,
 )
 
+def _assert_checkpoint_covers_model(model, state_dict) -> None:
+    """Guard the from_config() optimisation in classifier.py.
+
+    SDGClassifier builds its backbone from config alone, downloading no
+    pretrained weights. That is only correct because this checkpoint supplies
+    *every* parameter. strict=True already enforces it, but its error is a wall
+    of key names; this one says what actually broke and why it matters.
+    """
+    missing = sorted(set(model.state_dict()) - set(state_dict))
+    if missing:
+        raise RuntimeError(
+            f"Checkpoint is missing {len(missing)} parameter(s) the model needs, "
+            f"e.g. {missing[:3]}. classifier.py builds the backbone with "
+            "AutoModel.from_config(), so anything absent from the checkpoint would "
+            "be left randomly initialised. If the base model changed, that "
+            "optimisation is no longer safe."
+        )
+
+
 weights_path = hf_hub_download(repo_id="GE-Lab/SDGs-classifier", filename="best_model.pt")
-model.load_state_dict(torch.load(weights_path, map_location=device), strict=True)
+_state_dict = torch.load(weights_path, map_location=device)
+_assert_checkpoint_covers_model(model, _state_dict)
+model.load_state_dict(_state_dict, strict=True)
+del _state_dict  # release the 1.73 GB staging copy once it is in the model
 
 if device.type == "cuda":
     model = model.half()
