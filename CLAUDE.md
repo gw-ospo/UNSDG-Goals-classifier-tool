@@ -5,12 +5,12 @@ Web app (under the CHAOSS UN-SDG Working Group) that analyzes open source repos 
 ## Architecture — three separate services
 
 - **`frontend/`** — Next.js 15 (App Router) + TypeScript + Tailwind + MUI. Entry: [app/page.tsx](frontend/app/page.tsx). API calls live in `frontend/services/api.ts`. Run: `cd frontend && npm run dev` (localhost:3000). Lint: `npm run lint`.
-- **`backend/`** — Flask API in [backend/app.py](backend/app.py). Routes: `/api/classify_aurora` (Aurora SDG API), `/api/classify_st_url` (sentence-transformer + repo fetch). Run: `cd backend && python app.py`.
+- **`backend/`** — Flask API in [backend/app.py](backend/app.py). Routes: `/api/classify_aurora` (Aurora SDG API), `/api/classify_st_url` (sentence-transformer + repo fetch). Run: `cd backend && python app.py` (localhost:8010 — not Flask's default 5000, which macOS AirPlay occupies; `API_BASE_URL` in `frontend/services/api.ts` must match).
   - `backend/services/repo_fetcher.py` — fetches README/topics/meta from GitHub/GitLab/Codeberg/Bitbucket, with a deliberate exception hierarchy (`InvalidURLError`, `UnsupportedHostError`, `RepositoryNotFoundError`, `RateLimitError`, `FetchError`).
   - `backend/services/summariser.py` — Groq LLM summarization with graceful fallback when no API key / on any failure.
   - `backend/embedding_url.py` — zero-shot + embedding-similarity ensemble scoring against the `models/` microservice.
   - `backend/aurora_api.py` — client for the external Aurora SDG API.
-- **`models/`** — separate FastAPI microservice (`fastapi`/`uvicorn`/`torch`/`transformers`) serving a LUKE-based multi-label SDG classifier (`models/classifier.py`, `models/config.json`). Loads real weights from Hugging Face Hub at import time.
+- **`models/`** — separate Flask microservice (`flask`/`torch`/`transformers`/`sentence-transformers`) serving a LUKE-based multi-label SDG classifier (`models/classifier.py`, `models/config.json`). Run: `cd models && python app.py` (localhost:9010). Loads real weights from Hugging Face Hub at import time. Only `/predict` is consumed by the backend ([backend/embedding_url.py:99](backend/embedding_url.py#L99)); the `/similarities` route is currently unused because the backend embeds locally.
 
 The frontend never talks to `models/` directly — it goes through the Flask backend.
 

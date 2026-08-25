@@ -188,5 +188,30 @@ def classify_st_url():
     return jsonify(response), 200
 
 
+def _debug_enabled() -> bool:
+    """Whether to run with Werkzeug's interactive debugger.
+
+    The debugger allows arbitrary code execution on any unhandled exception, so
+    this fails closed: it is off unless FLASK_DEBUG is an explicitly recognised
+    truthy value. Flask's own get_debug_flag() treats *any* unrecognised string
+    as true (FLASK_DEBUG=off enables it), which is the wrong way round for a
+    switch that opens a remote shell.
+    """
+    return os.environ.get("FLASK_DEBUG", "").strip().lower() in {
+        "1", "true", "yes", "on",
+    }
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    debug = _debug_enabled()
+    if debug:
+        print(
+            "\n*** FLASK_DEBUG is on: the Werkzeug debugger executes arbitrary "
+            "code on error.\n*** Local development only — never on a reachable "
+            "host.\n"
+        )
+
+    # Default 8010 rather than Flask's 5000 — macOS AirPlay Receiver occupies 5000.
+    # Override with BACKEND_PORT (.env). Whatever this binds, point
+    # NEXT_PUBLIC_API_BASE_URL in frontend/.env.local at it.
+    app.run(debug=debug, port=int(os.environ.get("BACKEND_PORT", 8010)))

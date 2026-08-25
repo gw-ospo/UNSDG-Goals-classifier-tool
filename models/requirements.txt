@@ -1,6 +1,7 @@
-fastapi
-uvicorn
+flask
 torch
 transformers
+sentence-transformers
 huggingface_hub
-pydantic    
+numpy
+python-dotenv

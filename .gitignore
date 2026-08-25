@@ -1,8 +1,10 @@
-# === Python (backend) ===
+# === Python (backend + models) ===
 backend/myvenv/
+models/venv/
 __pycache__/
 *.pyc
 backend/.summarizer_cache/
+.pytest_cache/
 
 # === Frontend (Next.js) ===
 frontend/node_modules
@@ -35,6 +37,8 @@ frontend/next-env.d.ts
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...except the committed template contributors copy from
+!.env.example
 
 # misc
 .DS_Store

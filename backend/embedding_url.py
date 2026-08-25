@@ -98,9 +98,11 @@ def zero_shot_scores(text: str, labels: List[str]) -> Tuple[np.ndarray, Dict]:
     Now calls GE-Lab microservice.
     """
 
-    ge_lab_url = "http://localhost:9010/predict" 
+    # Read at call time, not import time: app.py calls load_dotenv() *after*
+    # importing this module, so a module-level constant would miss the .env value.
+    base = os.environ.get("MODEL_SERVICE_URL", "http://localhost:9010")
+    ge_lab_url = f"{base.rstrip('/')}/predict"
 
-    
     response = requests.post(ge_lab_url, json={"text": text}, timeout=1500)
     response.raise_for_status()
 

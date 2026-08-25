@@ -1,3 +1,4 @@
+import os
 import torch
 from flask import Flask, request, jsonify
 from transformers import AutoTokenizer
@@ -8,6 +9,11 @@ from huggingface_hub import hf_hub_download
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from similarities import get_embedder
+from dotenv import load_dotenv
+
+# Picks up the repository-root .env, same as the backend does.
+load_dotenv()
+
 app = Flask(__name__)
 
 print("Loading model and tokenizer...")
@@ -123,4 +129,10 @@ def hello():
 
 
 if __name__ == "__main__":
-    app.run(port = 9010)
+    # debug is pinned off: this service is internal, and the reloader would
+    # load the LUKE weights a second time. Without this, FLASK_DEBUG in the
+    # shared root .env would switch the Werkzeug debugger on here too.
+    #
+    # Override the port with MODELS_PORT (.env). The backend reaches this
+    # service via MODEL_SERVICE_URL, which must point at whatever this binds.
+    app.run(debug=False, port=int(os.environ.get("MODELS_PORT", 9010)))
