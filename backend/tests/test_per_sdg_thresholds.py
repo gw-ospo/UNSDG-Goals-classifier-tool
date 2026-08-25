@@ -8,12 +8,12 @@ Covers:
   - classify_repo with and without per_sdg_thresholds.
   - main() wiring per_sdg_thresholds into classify_repo.
   - app.py's ST-URL filter using per-SDG thresholds.
-  - the first 100 labelled projects of the repo-root dpgs.csv.xlsx, exercising
+  - the first 100 labelled projects of backend/data/dpgs.xlsx, exercising
     the gates against a real-world label distribution.
 
 No real network access, no real model/embedder — everything heavy is mocked.
 The project metadata and ground-truth SDG vectors in the last section are real
-(the dpgs.csv.xlsx dataset), but fetching/scoring stay mocked and deterministic.
+(the dpgs.xlsx dataset), but fetching/scoring stay mocked and deterministic.
 """
 
 from unittest.mock import MagicMock
@@ -261,29 +261,30 @@ class TestAppStPredFilter:
         assert not _st_pred_passes({"sdg": "weird label", "prediction": 0.4})
 
 
-# ─────────────── real DPG projects from dpgs.csv.xlsx ─────────────────────────
+# ─────────────── real DPG projects from data/dpgs.xlsx ───────────────────────
 
 # Data-driven tests. The fetching and scoring layers stay mocked (no network, no
 # real model — this is a unit suite), but the project metadata and ground-truth
-# SDG vectors come from the first 100 labelled DPGs in the repo-root
-# dpgs.csv.xlsx (141 DPGs total), so the per-SDG gates are exercised against a
-# real-world label distribution instead of three hand-picked cases. Scores are
-# synthetic but deterministic per URL, keeping the suite offline and stable.
+# SDG vectors come from the first 100 labelled DPGs in
+# backend/data/dpgs.xlsx (141 DPGs total), so the per-SDG gates are exercised
+# against a real-world label distribution instead of three hand-picked cases.
+# Scores are synthetic but deterministic per URL, keeping the suite offline and
+# stable.
 
-_DPGA_XLSX = Path(__file__).resolve().parents[2] / "dpgs.csv.xlsx"
+_DPGA_XLSX = Path(__file__).resolve().parents[1] / "data" / "dpgs.xlsx"
 _DPGA_SAMPLE_SIZE = 100
 _N_SDGS = 17
 _DPGA_AVAILABLE = _DPGA_XLSX.exists()
 
 
 def _load_dpga_projects(n=_DPGA_SAMPLE_SIZE):
-    """Load up to n labelled projects from dpgs.csv.xlsx (name, url, desc, gt)."""
+    """Load up to n labelled projects from data/dpgs.xlsx (name, url, desc, gt)."""
     if not _DPGA_XLSX.exists():
-        pytest.skip("dpgs.csv.xlsx not found at repo root")
+        pytest.skip("backend/data/dpgs.xlsx not found")
     try:
         import openpyxl
     except ImportError:
-        pytest.skip("openpyxl is required to read dpgs.csv.xlsx")
+        pytest.skip("openpyxl is required to read backend/data/dpgs.xlsx")
     wb = openpyxl.load_workbook(_DPGA_XLSX, read_only=True, data_only=True)
     ws = wb.worksheets[0]
     projects = []
@@ -335,7 +336,7 @@ def _manual_predictions(scores, threshold, per_sdg_thresholds, top_k=17):
     return selected[:top_k]
 
 
-@pytest.mark.skipif(not _DPGA_AVAILABLE, reason="dpgs.csv.xlsx missing at repo root")
+@pytest.mark.skipif(not _DPGA_AVAILABLE, reason="backend/data/dpgs.xlsx missing")
 class TestRealDpgaProjects:
     """Per-SDG thresholds over the first 100 real labelled DPG projects."""
 

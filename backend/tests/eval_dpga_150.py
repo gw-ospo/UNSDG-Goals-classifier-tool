@@ -62,6 +62,7 @@ from dotenv import load_dotenv
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 ROOT_DIR = BACKEND_DIR.parent
+DATA_DIR = BACKEND_DIR / "data"
 CACHE_DEFAULT = BACKEND_DIR / ".eval_cache"
 
 for p in (str(BACKEND_DIR), str(BACKEND_DIR / "services")):
@@ -715,8 +716,8 @@ def main() -> None:
     _cache = DiskCache(args.cache_dir)
     _install_cached_pipeline()
 
-    dpgs_path = ROOT_DIR / "dpgs.csv.xlsx"
-    os_path = ROOT_DIR / "OpenSustain.tech-Projects (1).csv.xlsx"
+    dpgs_path = DATA_DIR / "dpgs.xlsx"
+    os_path = DATA_DIR / "Open_sustain_tech_projects.xlsx"
     if not dpgs_path.exists():
         log(f"missing {dpgs_path}")
         return
