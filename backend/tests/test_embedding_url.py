@@ -298,8 +298,10 @@ class TestEnsembleScores:
     def test_default_alpha_is_weighted_average(self):
         zs = np.array([1.0, 0.0])
         es = np.array([0.0, 1.0])
-        result = embedding_url.ensemble_scores(zs, es)  # alpha defaults to 0.3
-        np.testing.assert_allclose(result, [0.3, 0.7])
+        # The signature default is 0.5; production passes alpha=0.7 explicitly
+        # from classify_repo(), so this only pins the fallback weighting.
+        result = embedding_url.ensemble_scores(zs, es)
+        np.testing.assert_allclose(result, [0.5, 0.5])
 
 
 # ─────────────────────────── classify_repo ────────────────────────────────────
@@ -384,7 +386,7 @@ class TestMain:
     def test_scores_formatted_to_three_decimals(self, monkeypatch):
         monkeypatch.setattr(
             embedding_url, "classify_repo",
-            lambda url, threshold, use_ensemble, proj_desc: {
+            lambda url, threshold, use_ensemble, proj_desc, per_sdg_thresholds=None: {
                 "repo": "owner/repo",
                 "predictions": [
                     ("SDG 1: End poverty in all its forms everywhere", 0.123456),

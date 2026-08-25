@@ -238,7 +238,7 @@ PER_SDG_THRESHOLDS = {
     "3":  0.50,   # Good Health and Well-being
     "4":  0.46,   # Quality Education
     "5":  0.53,   # Gender Equality
-    "6":  0.7,   # Clean Water and Sanitation
+    "6":  0.38,  # Clean Water and Sanitation
     "7":  0.45,   # Affordable and Clean Energy
     "8":  0.30,   # Decent Work and Economic Growth
     "9":  0.17,   # Industry, Innovation and Infrastructure
