@@ -1,3 +1,10 @@
+"""Manual smoke script — not a pytest suite. Run: python scripts/check_recommendation.py"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 from services.recommendation_pipeline import assess_relevance
 
 # Test case 1: Too short description
