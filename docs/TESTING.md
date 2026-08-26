@@ -33,7 +33,7 @@ Highest priority — this module is pure logic with a deliberate exception hiera
 **Covered by [`backend/tests/test_embedding_url.py`](../backend/tests/test_embedding_url.py) (24 tests, all passing).** The checklist below is what that file implements; kept here for reference since it doubles as the coverage map.
 
 - **`fetch_repo_text`**: user-supplied `project_description` takes priority over the repo's own metadata description (the documented "CHANGE 2" behavior); provider errors on `fetch_meta`/`fetch_topics`/`fetch_readme` are caught individually and don't abort the whole call.
-- **`zero_shot_scores`**: score ordering matches `SDG_NAMES`; raises `KeyError` when the microservice response is missing expected keys; raises `TypeError` on an unexpected `scores` type; handles the `payload["data"]["scores"]` nested-response shape.
+- **`zero_shot_scores`**: score ordering matches `SDG_NAMES`; raises `KeyError` when the model's scores are missing expected keys; raises `TypeError` on an unexpected `scores` type; handles the `payload["data"]["scores"]` nested-response shape. Both branches are covered — in-process (default) and remote over `MODEL_SERVICE_URL`.
 - **`embedding_similarity_scores`**: output is clipped to `[0, 1]` via `COSINE_LOW`/`COSINE_HIGH`.
 - **`ensemble_scores`**: weighted-average arithmetic is correct for various `alpha` values.
 - **`classify_repo`**: empty extracted text raises `ValueError`; predictions above `threshold` are selected; `predictions` is `[]` when nothing clears the threshold (see [known gap above](#known-gap-this-inventory-surfaced-resolved-no-threshold-match-behavior)) — no best-effort fallback.
@@ -114,7 +114,7 @@ Requires installing Jest or Vitest + React Testing Library first.
 - **Contract tests** between `frontend/services/api.ts` and the backend routes — would have caught the missing `classify_st_description` endpoint automatically instead of at runtime.
 - **SSRF consideration**: `fetch_repo_text`/`get_provider` take a user-supplied URL and the *server* makes outbound requests to it. `_sanitise_url` currently only validates URL *shape*, not destination — it will happily route to `http://localhost/...` or an internal `169.254.169.254`/RFC1918 address if a domain-map or engine-detection match were ever added for one. Worth a test (and likely a fix) confirming internal/private hosts are rejected before any request is issued.
 - **Rate-limit and timeout behavior** against real forges (GitHub/GitLab/Codeberg/Bitbucket) isn't practical to unit test — track this as a documented manual/staging check instead.
-- **End-to-end smoke test**: submit a real, known-good repository URL through the full stack and confirm a plausible SDG comes back. This is what [`backend/tests/test_dpga_real_positives.py`](../backend/tests/test_dpga_real_positives.py) already does by hand. It belongs in a manual/nightly tier, not the automated unit suite, since it depends on three live external services (the forge API, the GE-Lab microservice, and the embedding model).
+- **End-to-end smoke test**: submit a real, known-good repository URL through the full stack and confirm a plausible SDG comes back. This is what [`backend/tests/test_dpga_real_positives.py`](../backend/tests/test_dpga_real_positives.py) already does by hand. It belongs in a manual/nightly tier, not the automated unit suite, since it depends on live external services (the forge API, Groq, and Hugging Face for the model weights).
 
 ## Suggested priority order for contributors
 
