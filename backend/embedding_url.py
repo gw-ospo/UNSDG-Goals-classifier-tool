@@ -188,7 +188,8 @@ def classify_repo(url: str, threshold: float = 0.5, top_k: int = 10, use_ensembl
         "repo":        f"{data['owner']}/{data['repo']}",  
         "predictions": selected[:top_k],                  
         "top_all":     ranked[:top_k],
-        "meta":        data["meta"],                       
+        "meta":        data["meta"],
+        "summary":     text,
     }
 
 # ── CHANGE 4: main() accepts and passes project_description ──────────────────
@@ -201,7 +202,9 @@ def main(url: str, project_description: str = ""):
         "project_url": url,
         "sdg_predictions": {
             name: float(f"{score:.3f}") for (name, score) in result["predictions"]
-        }
+        },
+        "summary": result["summary"],
+        "meta": result["meta"],
     }
 
     return predictions

@@ -165,7 +165,9 @@ def classify_st_url():
     # ── Recommendation pipeline: assess why no SDGs were returned ──────────
     rec = assess_relevance(
         projectDescription or "",
-        st_url_result.get("meta", {}).get("description", "") or "",
+        st_url_result.get("summary")
+        or st_url_result.get("meta", {}).get("description", "")
+        or "",
     )
 
     preds = [
