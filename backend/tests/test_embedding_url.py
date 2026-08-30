@@ -426,6 +426,7 @@ class TestClassifyRepo:
 
         assert result["repo"] == "acme/widget"
         assert result["meta"] == {"name": "n", "description": "d", "topics": [], "homepage": ""}
+        assert result["summary"] == "some extracted text"
 
 
 # ─────────────────────────── main ──────────────────────────────────────────────
@@ -440,6 +441,8 @@ class TestMain:
                     ("SDG 1: End poverty in all its forms everywhere", 0.123456),
                     ("SDG 3: Ensure healthy lives and promote well-being for all at all ages", 0.98765),
                 ],
+                "summary": "summary used for recommendation context",
+                "meta": {"name": "repo", "description": "desc", "topics": [], "homepage": ""},
             },
         )
 
@@ -451,3 +454,5 @@ class TestMain:
             "SDG 1: End poverty in all its forms everywhere": 0.123,
             "SDG 3: Ensure healthy lives and promote well-being for all at all ages": 0.988,
         }
+        assert result["summary"] == "summary used for recommendation context"
+        assert result["meta"] == {"name": "repo", "description": "desc", "topics": [], "homepage": ""}
