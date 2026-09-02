@@ -1,8 +1,5 @@
-import torch
 from torch import nn
-from transformers import AutoTokenizer, AutoModel
-from huggingface_hub import hf_hub_download
-from pathlib import Path
+from transformers import AutoConfig, AutoModel
 
 # --- 1. Define the Model Architecture ---
 # This class must match the architecture used during training.
@@ -10,7 +7,11 @@ from pathlib import Path
 class SDGClassifier(nn.Module):
     def __init__(self, model_path, pooler_dropout, class_number):
         super().__init__()
-        self.bert = AutoModel.from_pretrained(model_path)
+        # Architecture only — no pretrained weights. load_state_dict(strict=True)
+        # in the caller overwrites every parameter from the fine-tuned checkpoint,
+        # so downloading 1.73 GB of luke-large-lite weights here only to discard
+        # them was pure cost. Guarded by _assert_checkpoint_covers_model().
+        self.bert = AutoModel.from_config(AutoConfig.from_pretrained(model_path))
         
         # Checkpoint stores custom pooler AS bert.pooler (overwrites LUKE's built-in)
         # so assign it directly onto self.bert.pooler, not as self.pooler
@@ -41,28 +42,3 @@ class SDGClassifier(nn.Module):
         pooled = self.tanh(self.bert.pooler(self.dropout(avg)))
         logits = self.cls(pooled)
         return logits, avg, out.attentions
-
-# --- 2. Setup and Load Model ---
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Model configuration
-BASE_MODEL = 'studio-ousia/luke-large-lite'
-NUM_CLASSES = 17
-DROPOUT_RATE = 0.26 # This is the optimized dropout rate from the paper's training
-
-# Instantiate the model
-model = SDGClassifier(model_path=BASE_MODEL, pooler_dropout=DROPOUT_RATE, class_number=NUM_CLASSES).to(device)
-model.eval() # Set to evaluation mode
-
-# Download the fine-tuned weights from this Hub
-model_weights_path = hf_hub_download(
-    repo_id="GE-Lab/SDGs-classifier",
-    filename="best_model.pt"
-)
-
-# # Load the weights into the model
-# model.load_state_dict(torch.load(model_weights_path, map_location=device))
-state_dict   = torch.load(model_weights_path, map_location=device)
-model.load_state_dict(state_dict, strict=True)
-
-print("Model loaded successfully!")

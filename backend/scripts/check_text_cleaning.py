@@ -1,3 +1,10 @@
+"""Manual smoke script — not a pytest suite. Run: python scripts/check_text_cleaning.py"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 from services.recommendation_pipeline import _clean_text, _is_too_short
 
 text = "This project is a Python React Django Flask application using PostgreSQL Redis Docker Kubernetes"

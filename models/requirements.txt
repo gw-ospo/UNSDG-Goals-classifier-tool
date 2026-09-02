@@ -1,9 +1,0 @@
-flask
-torch
-transformers
-sentence-transformers
-numpy
-huggingface_hub
-fastapi
-uvicorn
-pydantic
