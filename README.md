@@ -36,6 +36,10 @@ Our project is officially listed in the [Code4GoodTech Dedicated Mentoring Progr
 
 We warmly welcome contributions of all kinds both code and non-code! Please read the [Contributing Guide](CONTRIBUTING.md) to get started. For larger changes, consider opening an issue first to discuss your idea.
 
+## Setup
+
+See [Setup Instructions](./SETUP.md) for details.
+
 ## Features
 
 - 🔍 **Repository Analysis**: Analyzes GitHub repositories using AI to determine SDG alignment

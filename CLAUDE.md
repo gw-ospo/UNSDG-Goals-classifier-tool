@@ -38,5 +38,6 @@ When adding backend logic, prefer pure/mockable functions (see `repo_fetcher.py`
 
 - `_sanitise_url` in `repo_fetcher.py` validates URL *shape* only, not destination — no SSRF guard against internal/private hosts yet.
 - The trailing `SDGs = [...]` list at the bottom of `backend/sdg_constants.py` looks like leftover dead code.
+- `models/requirements.txt` still lists unused `fastapi`/`uvicorn`/`pydantic` (the app is Flask, not FastAPI) — left in place since removing them was out of scope for the local-setup fix that added the packages it was actually missing (`flask`, `sentence-transformers`, `numpy`).
 
 See `CLAUDE.local.md` (untracked) for maintainer-specific working notes.

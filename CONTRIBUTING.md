@@ -28,71 +28,7 @@ You don't need to be a developer to contribute! There are many meaningful ways t
  
 ## Development Setup
 
-This repository contains **two separate services** that run at the same time:
-
-| Service | Directory | Stack | Port |
-|---------|-----------|-------|------|
-| Frontend | `frontend/` | Next.js 15 + TypeScript + Tailwind | 3000 |
-| Backend API | `backend/` | Flask + PyTorch (serves the API and runs the LUKE SDG classifier in-process) | 8010 |
-
-The frontend talks only to the backend, which runs SDG inference in-process. There is **no root `package.json`** — every `npm` command must be run from inside `frontend/`.
-
-### Prerequisites
- 
-- [Node.js](https://nodejs.org/) v18.18 or higher (required by Next.js 15)
-- [npm](https://www.npmjs.com/) (ships with Node.js)
-- [Python](https://www.python.org/) 3.10 or higher, with `venv` and `pip`
-- Git
-- A [GitHub personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) — raises the GitHub API rate limit when fetching repository data
-- *(Optional)* A [Groq API key](https://www.groq.com/) — enables LLM summarization of READMEs; the backend falls back gracefully without it
-- *(Optional)* A [Hugging Face token](https://huggingface.co/docs/hub/en/security-tokens) — only needed if you hit rate limits downloading model weights
-
-### Local Setup
- 
-1. **Fork the repository** on GitHub, then clone your fork:
-   ```bash
-   git clone https://github.com/<your-username>/UNSDG-classifier-tool.git
-   cd UNSDG-classifier-tool
-   ```
- 
-2. **Add the upstream remote** so you can pull in future updates:
-   ```bash
-   git remote add upstream https://github.com/chaoss/UNSDG-classifier-tool.git
-   ```
- 
-3. **Configure environment variables** in the repository root:
-   ```bash
-   cp .env.example .env
-   ```
- 
-   Then edit `.env` and fill in your tokens:
-   ```
-   GITHUB_TOKEN=your_token_here
-   GROQ_API_KEY=your_key_here
-   HF_TOKEN=your_token_here
-   ```
- 
-   Only `GITHUB_TOKEN` is needed to get started — the other two are optional (see Prerequisites). The backend picks this file up automatically. Keep it in the repository root and never commit it.
- 
-4. **Start the backend API** — in a new terminal, from the repository root:
-   ```bash
-   cd backend
-   python3 -m venv myvenv
-   source myvenv/bin/activate     # Windows: myvenv\Scripts\activate
-   pip install -r requirements.txt
-   python app.py
-   ```
- 
-   The API runs at `http://127.0.0.1:8010`. Check it with `curl http://127.0.0.1:8010/api/hello`.
- 
-5. **Start the frontend** — in a second terminal, from the repository root:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
- 
-   The app should be running at `http://localhost:3000`.
+See [Setup Instructions](./SETUP.md) for details.
 
 #### Do I need all three?
 
