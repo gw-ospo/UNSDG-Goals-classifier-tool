@@ -27,48 +27,8 @@ You don't need to be a developer to contribute! There are many meaningful ways t
 
  
 ## Development Setup
- 
-### Prerequisites
- 
-- [Node.js](https://nodejs.org/) v18 or higher
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-- A GitHub personal access token (for API access during development)
-- Git
 
-### Local Setup
- 
-1. **Fork the repository** on GitHub, then clone your fork:
-   ```bash
-   git clone https://github.com/<your-username>/UNSDG-classifier-tool.git
-   cd UNSDG-classifier-tool
-   ```
- 
-2. **Add the upstream remote** so you can pull in future updates:
-   ```bash
-   git remote add upstream https://github.com/chaoss/UNSDG-classifier-tool.git
-   ```
- 
-3. **Install dependencies:**
-   ```bash
-   npm install
-   ```
- 
-4. **Configure environment variables:**
-   ```bash
-   cp .env.example .env
-   ```
- 
-   Then edit `.env` to add your GitHub personal access token:
-   ```
-   GITHUB_TOKEN=your_token_here
-   ```
- 
-5. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
- 
-   The app should be running at `http://localhost:3000`.
+See [Setup Instructions](./SETUP.md) for details.
 
 ## Making a Contribution
  

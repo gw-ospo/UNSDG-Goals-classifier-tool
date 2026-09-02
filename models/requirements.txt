@@ -1,6 +1,9 @@
-fastapi
-uvicorn
+flask
 torch
 transformers
+sentence-transformers
+numpy
 huggingface_hub
-pydantic    
+fastapi
+uvicorn
+pydantic

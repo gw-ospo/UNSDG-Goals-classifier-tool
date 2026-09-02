@@ -10,7 +10,7 @@ Web app (under the CHAOSS UN-SDG Working Group) that analyzes open source repos 
   - `backend/services/summariser.py` — Groq LLM summarization with graceful fallback when no API key / on any failure.
   - `backend/embedding_url.py` — zero-shot + embedding-similarity ensemble scoring against the `models/` microservice.
   - `backend/aurora_api.py` — client for the external Aurora SDG API.
-- **`models/`** — separate FastAPI microservice (`fastapi`/`uvicorn`/`torch`/`transformers`) serving a LUKE-based multi-label SDG classifier (`models/classifier.py`, `models/config.json`). Loads real weights from Hugging Face Hub at import time.
+- **`models/`** — separate Flask microservice (`models/app.py`; `fastapi`/`uvicorn` sit unused in its `requirements.txt` — see rough edges below) serving a LUKE-based multi-label SDG classifier (`models/classifier.py`, `models/config.json`) plus a `/similarities` embedding endpoint. Loads real weights from Hugging Face Hub at import time. Run: `cd models && python app.py` (localhost:9010). Only needed for the frontend's "Sentence Transformer URL" tab — "Aurora Model" doesn't touch it.
 
 The frontend never talks to `models/` directly — it goes through the Flask backend.
 
@@ -36,5 +36,6 @@ When adding backend logic, prefer pure/mockable functions (see `repo_fetcher.py`
 
 - `_sanitise_url` in `repo_fetcher.py` validates URL *shape* only, not destination — no SSRF guard against internal/private hosts yet.
 - The trailing `SDGs = [...]` list at the bottom of `backend/sdg_constants.py` looks like leftover dead code.
+- `models/requirements.txt` still lists unused `fastapi`/`uvicorn`/`pydantic` (the app is Flask, not FastAPI) — left in place since removing them was out of scope for the local-setup fix that added the packages it was actually missing (`flask`, `sentence-transformers`, `numpy`).
 
 See `CLAUDE.local.md` (untracked) for maintainer-specific working notes.
