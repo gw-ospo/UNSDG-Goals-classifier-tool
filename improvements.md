@@ -21,14 +21,20 @@ contributions and refactoring efforts.
   - `localhost`
   - RFC1918 private IP ranges: `10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`
   - Loopback `127.x.x.x`
-  The function now returns `InvalidURLError` for any of these hosts, preventing SSRF.
-  Verified: all test cases pass (valid URLs pass, private/loopback IPs rejected).
+  The function returns `InvalidURLError` for any of these hosts.
+- **Status: PARTIAL, not closed.** The check is a dotted-quad string comparison, so every
+  non-decimal encoding of the same address still passes. Verified against the current code:
+  `169.254.169.254` (**cloud metadata — the highest-value SSRF target, and reachable from
+  EC2**), `2130706433`, `0x7f000001`, `127.1`, `[::1]`, and `redis.internal` are all
+  **allowed**. A complete two-layer guard (`_is_public_ip` / `_assert_public_host`, plus 51
+  tests) exists on the local `config` branch in commit `c27ec5a` but was never pushed — PR #72
+  merged only through `cb4a84a`. Rescue it before deploying to a public address.
 
 ### 2. Dead Code: Trailing `SDGs` List
 - **Location**: `backend/sdg_constants.py:218-220`
 - **Issue**: The list `SDGs = ["SDG 1", "SDG 2", "SDG 3"]` at the bottom of the file appears
   to be leftover dead code from development. It is not referenced anywhere else in the codebase.
-- **Fix**: Remove the dead code or add a clear comment if it serves an intentional purpose.
+- **Fix**: ~~Remove the dead code~~ — **DONE**, removed with the service merge.
 
 ### 3. Inconsistent SDG Label Formats
 - **Location**: `backend/sdg_constants.py` multiple references
@@ -36,7 +42,7 @@ contributions and refactoring efforts.
   - `SDG_LABELS_DICT`: keys `"1"`-"`17"` mapping to full names (used by Aurora API)
   - `SDG_NAMES`: full `"SDG 1: End poverty..."` strings (used by embedding models)
   - `SDG_LABELS`: goal description strings (used by similarity scoring)
-  - `SDG_DESCS`: descriptive strings in `models/similarities.py` and `backend/services/summariser.py`
+  - `SDG_DESCS`: descriptive strings in `backend/sdg_constants.py` (the duplicate in the retired `models/similarities.py` is gone — the two copies had already diverged)
 - **Risk**: Confusion about which format to use where, potential mapping bugs when switching
   between models, and duplicated description text that diverges over time.
 - **Fix**: Establish a single canonical SDG label format and convert/alias others to it.
@@ -69,12 +75,14 @@ contributions and refactoring efforts.
   add a "no relevant SDG" signal to the response. Consider adding a secondary low-confidence
   band (e.g., 0.2) that surfaces the closest match with a "Low" confidence tag.
 
-### 7. GE-Lab Microservice Dependency at localhost:9010
-- **Location**: `backend/embedding_url.py:99` (`zero_shot_scores`)
-- **Issue**: The zero-shot model calls `http://localhost:9010/predict` which requires the
-  GE-Lab microservice to be running locally. If it's down, the entire classification fails.
-- **Fix**: Add a fallback to the sentence-transformer ensemble-only mode when the microservice
-  is unreachable. Consider making the microservice URL configurable.
+### 7. GE-Lab Microservice Dependency at localhost:9010 ✅ RESOLVED
+- **Location**: `backend/embedding_url.py` (`zero_shot_scores`)
+- **Issue**: The zero-shot model called `http://localhost:9010/predict`, requiring a second
+  service. If it was down, every classification failed.
+- **Resolution**: The service was merged into the backend; inference now runs in-process via
+  `services/inference.py`, so there is no hop to fail. The HTTP path is retained behind
+  `MODEL_SERVICE_URL` (unset by default) so the model can move back to its own host for GPU
+  or independent scaling.
 
 ### 8. Bitbucket Wiki Deprecation (2026-08-20)
 - **Location**: `backend/services/repo_fetcher.py:647-676` (`fetch_wiki_home`)
@@ -143,8 +151,7 @@ contributions and refactoring efforts.
 7. **Ensemble Alpha Configuration**: Make the ensemble alpha (currently 0.3) configurable
    via environment variable or API parameter.
 
-8. **Microservice Failover**: Add fallback to ensemble-only mode when GE-Lab microservice
-   at localhost:9010 is unreachable.
+8. ~~**Microservice Failover**~~ — moot: inference runs in-process (see §7).
 
 9. **Bitbucket Wiki Deprecation Handling**: Add runtime check or config flag for the
    Bitbucket wiki deprecation date (2026-08-20).
@@ -185,8 +192,9 @@ contributions and refactoring efforts.
 19. **Aurora API Integration**: Deeper integration with the Aurora SDG API, including
     bidirectional mapping between Aurora's SDG codes and the tool's internal SDG labels.
 
-20. **Model Version Pinning**: Add version pinning / checksum validation for the GE-Lab
-    microservice model and sentence-transformer models to ensure reproducible results.
+20. **Model Version Pinning**: Add revision pinning / checksum validation for the
+    `GE-Lab/SDGs-classifier` checkpoint and the sentence-transformer weights so results stay
+    reproducible. `hf_hub_download` currently resolves the default branch with no `revision`.
 
 ---
 
@@ -194,7 +202,7 @@ contributions and refactoring efforts.
 
 The classification mechanism is functional but has several areas where robustness,
 security, and maintainability can be improved. The highest-impact changes are:
-- SSRF protection (security critical)
+- SSRF protection (security critical — **still open**, see §1; fix exists unpushed on `config`)
 - Unified SDG label format (developer ergonomics)
 - Configurable thresholds (usability)
 - Best-effort fallback when no goals match (user experience)

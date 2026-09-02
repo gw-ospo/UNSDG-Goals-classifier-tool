@@ -214,7 +214,3 @@ SDG_LABELS = [
 
 
 print("SDG Constants loaded: ", len(SDG_LABELS), " SDGs with names and descriptions.")
-
-SDGs = [
-    "SDG 1", "SDG 2", "SDG 3",
-]

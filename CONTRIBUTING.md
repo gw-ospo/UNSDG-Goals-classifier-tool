@@ -28,15 +28,14 @@ You don't need to be a developer to contribute! There are many meaningful ways t
  
 ## Development Setup
 
-This repository contains **three separate services** that run at the same time:
+This repository contains **two separate services** that run at the same time:
 
 | Service | Directory | Stack | Port |
 |---------|-----------|-------|------|
 | Frontend | `frontend/` | Next.js 15 + TypeScript + Tailwind | 3000 |
-| Backend API | `backend/` | Flask | 8010 |
-| Model service | `models/` | Flask + PyTorch (LUKE SDG classifier) | 9010 |
+| Backend API | `backend/` | Flask + PyTorch (serves the API and runs the LUKE SDG classifier in-process) | 8010 |
 
-The frontend talks only to the backend; the backend calls the model service. There is **no root `package.json`** — every `npm` command must be run from inside `frontend/`.
+The frontend talks only to the backend, which runs SDG inference in-process. There is **no root `package.json`** — every `npm` command must be run from inside `frontend/`.
 
 ### Prerequisites
  
@@ -86,18 +85,7 @@ The frontend talks only to the backend; the backend calls the model service. The
  
    The API runs at `http://127.0.0.1:8010`. Check it with `curl http://127.0.0.1:8010/api/hello`.
  
-5. **Start the model service** — in a second terminal, from the repository root. Required by the `/api/classify_st_url` route:
-   ```bash
-   cd models
-   python3 -m venv venv
-   source venv/bin/activate       # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   python app.py
-   ```
- 
-   The service runs at `http://localhost:9010`. **The first start is slow** — it downloads the LUKE classifier weights from Hugging Face. Wait for `Model and tokenizer loaded successfully.` before classifying anything.
- 
-6. **Start the frontend** — in a third terminal, from the repository root:
+5. **Start the frontend** — in a second terminal, from the repository root:
    ```bash
    cd frontend
    npm install
@@ -108,7 +96,7 @@ The frontend talks only to the backend; the backend calls the model service. The
 
 #### Do I need all three?
 
-If you're working on the UI, the Aurora classifier, or repository fetching, you can skip step 5 — just be aware that the sentence-transformer option in the UI will return an error until the model service is running.
+The first `/api/classify_st_url` request is slow — the backend downloads the LUKE classifier weights from Hugging Face on first use, then serves from the local cache.
 
 #### Quick start script
 
@@ -118,12 +106,11 @@ If you're working on the UI, the Aurora classifier, or repository fetching, you 
 ./bash.sh
 ```
 
-It does **not** start the model service — run step 5 yourself in a separate terminal if you need it.
 
 #### Troubleshooting
 
 - **`npm error Could not read package.json`** — you're in the repository root. `cd frontend` first.
-- **The first classification takes several minutes** — both the backend and the model service download Hugging Face models on first use. Later runs read from the local cache.
+- **The first classification takes several minutes** — the backend downloads Hugging Face models on first use. Later runs read from the local cache.
 
 ## Making a Contribution
  
@@ -185,7 +172,7 @@ cd frontend
 npm run lint
 ```
  
-The `models/` service has no tests. See [docs/TESTING.md](docs/TESTING.md) for the full inventory of what's covered, what isn't, and which gaps are good first issues — setting up a frontend test runner is one of them.
+SDG inference (`backend/services/inference.py`, `sdg_model.py`) has no tests — the model loads real weights, which makes naive unit testing hard. See [docs/TESTING.md](docs/TESTING.md) for the full inventory of what's covered, what isn't, and which gaps are good first issues — setting up a frontend test runner is one of them.
  
 If you're adding new functionality, include tests that cover the new behavior. If you're fixing a bug, add a test that would have caught the bug.
  

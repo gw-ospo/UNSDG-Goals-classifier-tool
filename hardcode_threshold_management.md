@@ -10,9 +10,10 @@ in the UNSDG Classifier Tool's classification mechanism.
 
 Classification thresholds are currently hardcoded in three locations:
 
-1. **`backend/app.py:67`**: Aurora API filter threshold `> 0.4`
-2. **`backend/embedding_url.py:176`**: `classify_repo` default threshold `sc >= 0.5`
-3. **`backend/embedding_url.py:188`**: `main()` function uses `threshold=0.4`
+1. **`backend/app.py:74`** (Aurora) and **`app.py:175`** (ST URL): filter threshold `> 0.4`
+2. **`backend/embedding_url.py:163`**: `classify_repo` default `threshold=0.5`, applied at `:185`
+3. **`backend/embedding_url.py:197`**: `main()` overrides it with `threshold=0.7`
+4. **`backend/embedding_url.py:178`**: ensemble weighting `alpha=0.3`, equally hardcoded
 
 These thresholds control which SDG predictions are surfaced to users. Hardcoded values mean:
 - No way to tune sensitivity without code changes

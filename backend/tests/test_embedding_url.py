@@ -192,6 +192,16 @@ class TestFetchRepoText:
 # ─────────────────────────── zero_shot_scores ────────────────────────────────
 
 class TestZeroShotScores:
+    """The remote-model path.
+
+    zero_shot_scores runs in-process unless MODEL_SERVICE_URL is set, so these
+    pin the HTTP seam that lets the model be moved back onto its own host.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _route_over_http(self, monkeypatch):
+        monkeypatch.setenv("MODEL_SERVICE_URL", "http://model.test:9010")
+
     def test_score_ordering_matches_sdg_names(self, monkeypatch):
         # Reverse-order mapping so the assertion can't pass by accident of
         # dict/list ordering matching SDG_NAMES ordering already.
@@ -280,6 +290,44 @@ class TestEmbeddingSimilarityScores:
         np.testing.assert_allclose(sims, [0.0, 0.0, 0.5, 1.0, 1.0], atol=1e-9)
 
 
+
+
+class TestZeroShotScoresInProcess:
+    """The default path: no MODEL_SERVICE_URL, model called directly."""
+
+    @pytest.fixture(autouse=True)
+    def _no_service_url(self, monkeypatch):
+        monkeypatch.delenv("MODEL_SERVICE_URL", raising=False)
+
+    def test_calls_model_directly_without_http(self, monkeypatch):
+        scores = dict(zip(sdg_constants.SDG_NAMES, [i / 100 for i in range(17)]))
+        monkeypatch.setattr(embedding_url, "predict_scores", lambda text: scores)
+        # any HTTP attempt is a bug in this mode
+        monkeypatch.setattr(
+            embedding_url.requests, "post",
+            MagicMock(side_effect=AssertionError("must not call the network")),
+        )
+
+        arr, details = embedding_url.zero_shot_scores("text", sdg_constants.SDG_NAMES)
+
+        np.testing.assert_allclose(arr, [i / 100 for i in range(17)])
+        assert details["labels"] == sdg_constants.SDG_NAMES
+
+    def test_ordering_follows_sdg_names_not_dict_order(self, monkeypatch):
+        scrambled = dict(zip(reversed(sdg_constants.SDG_NAMES), range(17)))
+        monkeypatch.setattr(embedding_url, "predict_scores", lambda text: scrambled)
+
+        arr, _ = embedding_url.zero_shot_scores("text", sdg_constants.SDG_NAMES)
+
+        np.testing.assert_array_equal(arr, [16 - i for i in range(17)])
+
+    def test_missing_key_raises_key_error(self, monkeypatch):
+        incomplete = {n: 0.5 for n in sdg_constants.SDG_NAMES[:-1]}
+        monkeypatch.setattr(embedding_url, "predict_scores", lambda text: incomplete)
+
+        with pytest.raises(KeyError):
+            embedding_url.zero_shot_scores("text", sdg_constants.SDG_NAMES)
+
 # ─────────────────────────── ensemble_scores ──────────────────────────────────
 
 class TestEnsembleScores:
@@ -298,8 +346,10 @@ class TestEnsembleScores:
     def test_default_alpha_is_weighted_average(self):
         zs = np.array([1.0, 0.0])
         es = np.array([0.0, 1.0])
-        result = embedding_url.ensemble_scores(zs, es)  # alpha defaults to 0.3
-        np.testing.assert_allclose(result, [0.3, 0.7])
+        # The signature default is 0.5. Production never relies on it —
+        # classify_repo passes alpha explicitly — so this pins the fallback only.
+        result = embedding_url.ensemble_scores(zs, es)
+        np.testing.assert_allclose(result, [0.5, 0.5])
 
 
 # ─────────────────────────── classify_repo ────────────────────────────────────
@@ -376,6 +426,7 @@ class TestClassifyRepo:
 
         assert result["repo"] == "acme/widget"
         assert result["meta"] == {"name": "n", "description": "d", "topics": [], "homepage": ""}
+        assert result["summary"] == "some extracted text"
 
 
 # ─────────────────────────── main ──────────────────────────────────────────────
@@ -390,6 +441,8 @@ class TestMain:
                     ("SDG 1: End poverty in all its forms everywhere", 0.123456),
                     ("SDG 3: Ensure healthy lives and promote well-being for all at all ages", 0.98765),
                 ],
+                "summary": "summary used for recommendation context",
+                "meta": {"name": "repo", "description": "desc", "topics": [], "homepage": ""},
             },
         )
 
@@ -401,3 +454,5 @@ class TestMain:
             "SDG 1: End poverty in all its forms everywhere": 0.123,
             "SDG 3: Ensure healthy lives and promote well-being for all at all ages": 0.988,
         }
+        assert result["summary"] == "summary used for recommendation context"
+        assert result["meta"] == {"name": "repo", "description": "desc", "topics": [], "homepage": ""}

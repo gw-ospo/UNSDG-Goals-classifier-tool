@@ -1,6 +1,5 @@
-# === Python (backend + models) ===
+# === Python (backend) ===
 backend/myvenv/
-models/venv/
 __pycache__/
 *.pyc
 backend/.summarizer_cache/

@@ -154,7 +154,7 @@ def classify_st_url():
                        "Ensure the repository is public and the URL is correct.",
         }), 502
 
-    # ── 500 — anything else (model failure, microservice down, etc.) ──────────
+    # ── 500 — anything else (model load failure, inference error, etc.) ───────
     except Exception as e:
         print(f"ST URL model unexpected error: {e}")
         return jsonify({
@@ -165,7 +165,9 @@ def classify_st_url():
     # ── Recommendation pipeline: assess why no SDGs were returned ──────────
     rec = assess_relevance(
         projectDescription or "",
-        st_url_result.get("meta", {}).get("description", "") or "",
+        st_url_result.get("summary")
+        or st_url_result.get("meta", {}).get("description", "")
+        or "",
     )
 
     preds = [
